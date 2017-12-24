@@ -3,12 +3,36 @@
   <ItemGroup>
     <ClCompile Include="Mainer.cpp" />
     <ClCompile Include="MetapodGLWindow.cpp" />
+    <ClCompile Include="ShapeGenerator.cpp">
+      <Filter>Primitives</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MetapodGLWindow.h" />
+    <ClInclude Include="Vertex.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="ShapeData.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="ShapeGenerator.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vertexShaderCode.glsl" />
-    <None Include="fragmentShaderCode.glsl" />
+    <None Include="vertexShaderCode.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="fragmentShaderCode.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Primitives">
+      <UniqueIdentifier>{da83fb7a-3966-4395-9c61-5605d4927aa9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{2eadbe92-2d97-42e4-875d-4cc2eb48c23b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

@@ -1,35 +1,75 @@
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <GL\glew.h>
 #include "MetapodGLWindow.h"
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtx\transform.hpp>
+#include "Vertex.h"
+#include "ShapeGenerator.h"
 
 using std::string;
+using std::cout;
+using std::endl;
+using glm::mat4;
+using glm::vec3;
+
+GLuint numTriangles = 0;
+
+const GLuint MAX_TRIES = 20;
+const GLuint NUM_VERTEX_PER_TRI = 3;
+const GLuint NUM_FLOATS_PER_VERTEX = 6;
+const GLuint NUM_BYTES_TRI = NUM_VERTEX_PER_TRI * NUM_FLOATS_PER_VERTEX * sizeof(float);
+const float OFF_SET = 0.1f;
+
+GLuint programID;
+GLsizei numIndices;
 
 void MetapodGLWindow::sendDataToOpenGL() {
-	GLfloat verts[] = {
-		+0.0f, +1.0f, +1.0f, //Vertices
-		+1.0f, +1.0f, +0.0f,
-		-1.0f, -1.0f, +1.0f, //Vertices
-		+1.0f, +0.0f, +0.0f,
-		+1.0f, -1.0f, +1.0f, //Vertices
-		+0.0f, +1.0f, +0.0f
-	};
+
+	ShapeData shape = ShapeGenerator::makeQuad();
 
 	GLuint vertexBufferID;
 	glGenBuffers(1, &vertexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, shape.vertexBufferSize(), shape.vertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (char*)(3 * sizeof(float)));
 
-	GLushort indices[] = { 0,1,2 };
 	GLuint indexBufferID;
 	glGenBuffers(1, &indexBufferID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indexBufferSize(), shape.indices, GL_STATIC_DRAW);
+	numIndices = shape.indexBufferSize();
+	shape.cleanup();
+}
+
+void MetapodGLWindow::sendAnotherTriangleToOpenGL() {
+
+	if (numTriangles == MAX_TRIES)
+		return;
+
+	const GLfloat vertexPosition = -1.0f + numTriangles * OFF_SET;
+
+	GLfloat myTri[] = {
+		+vertexPosition, +1.0f, +0.0f,
+		+1.0f, +0.0f, +0.0f,
+
+		+vertexPosition + OFF_SET, +1.0f, +0.0f,
+		+0.0f, +1.0f, +0.0f,
+
+		+vertexPosition, +0.0f, +0.0f,
+		+0.0f, +0.0f, +1.0f
+	};
+
+	glBufferSubData(GL_ARRAY_BUFFER, numTriangles * NUM_BYTES_TRI, NUM_BYTES_TRI, myTri);
+	numTriangles++;
+
 }
 
 string MetapodGLWindow::readShaderCode(char* fileName) {
@@ -62,12 +102,14 @@ void MetapodGLWindow::installShaders() {
 	if (!checkShaderStatus(vertexShaderID) || !checkShaderStatus(fragmentShaderID))
 		return;
 
-	GLuint programID = glCreateProgram();
+	programID = glCreateProgram();
 	glAttachShader(programID, vertexShaderID);
 	glAttachShader(programID, fragmentShaderID);
 	glLinkProgram(programID);
 	if (!checkProgramStatus(programID))
 		return;
+	glDeleteShader(vertexShaderID);
+	glDeleteShader(fragmentShaderID);
 	glUseProgram(programID);
 }
 
@@ -109,11 +151,37 @@ bool MetapodGLWindow::checkProgramStatus(GLuint programID) {
 
 void MetapodGLWindow::initializeGL() {
 	glewInit();
+	glEnable(GL_DEPTH_TEST);
 	sendDataToOpenGL();
 	installShaders();
 }
 
 void MetapodGLWindow::paintGL() {
 	glViewport(0, 0, width(), height());
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLuint fullTransformMatrixUniformLocation = glGetUniformLocation(programID, "fullTransformMatrix");
+
+	mat4 fullTransformMatrix;
+	mat4 perspectiveMatrix = glm::perspective(1.54f, ((float)width()) / height(), 0.10f, 10.0f);
+
+	//Cubo 1
+	mat4 translationMatrix = glm::translate(vec3(-1.0f, +0.0f, -3.0f));
+	mat4 rotationMatrix = glm::rotate(0.6283185f, vec3(1.0f, 0.0f, 0.0f));
+
+	fullTransformMatrix = perspectiveMatrix*translationMatrix*rotationMatrix;
+
+	glUniformMatrix4fv(fullTransformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+
+	glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, 0);
+
+	//Cubo 2
+	translationMatrix = glm::translate(vec3(+1.0f, +0.0f, -3.75f));
+	rotationMatrix = glm::rotate(2.20f, vec3(0.0f, 1.0f, 0.0f));
+
+	fullTransformMatrix = perspectiveMatrix*translationMatrix*rotationMatrix;
+
+	glUniformMatrix4fv(fullTransformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+
+	glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, 0);
 }

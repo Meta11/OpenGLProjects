@@ -4,6 +4,7 @@
 class MetapodGLWindow : public QGLWidget {
 private:
 	void sendDataToOpenGL(); 
+	void sendAnotherTriangleToOpenGL();
 	void installShaders();
 	std::string readShaderCode(char* fileName);
 	bool checkShaderStatus(GLuint shaderID);
