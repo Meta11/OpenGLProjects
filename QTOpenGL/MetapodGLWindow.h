@@ -11,6 +11,8 @@ private:
 	bool checkProgramStatus(GLuint programID);
 protected:
 	void initializeGL();
+	void mouseMoveEvent(QMouseEvent*);
+	void keyPressEvent(QKeyEvent*);
 	void paintGL();
 public:
 

@@ -2,6 +2,8 @@
 
 #include <GL\glew.h>
 #include "MetapodGLWindow.h"
+#include <QtGui\qmouseevent>
+#include <QtGui\qkeyevent>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -10,6 +12,7 @@
 #include <glm\gtx\transform.hpp>
 #include "Vertex.h"
 #include "ShapeGenerator.h"
+#include "Camera.h"
 
 using std::string;
 using std::cout;
@@ -27,6 +30,7 @@ const float OFF_SET = 0.1f;
 
 GLuint programID;
 GLsizei numIndices;
+Camera camera;
 
 void MetapodGLWindow::sendDataToOpenGL() {
 
@@ -150,10 +154,40 @@ bool MetapodGLWindow::checkProgramStatus(GLuint programID) {
 }
 
 void MetapodGLWindow::initializeGL() {
+	setMouseTracking(true);
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 	sendDataToOpenGL();
 	installShaders();
+}
+
+void MetapodGLWindow::mouseMoveEvent(QMouseEvent* e) {
+	camera.mouseUpdate(glm::vec2(e->x(), e->y()));
+	repaint();
+}
+
+void MetapodGLWindow::keyPressEvent(QKeyEvent* e) {
+	switch(e->key()){
+		case Qt::Key::Key_W:
+			camera.moveForward();
+			break;
+		case Qt::Key::Key_A:
+			camera.moveLeft();
+			break;
+		case Qt::Key::Key_S:
+			camera.moveBackwards();
+			break;
+		case Qt::Key::Key_D:
+			camera.moveRight();
+			break;
+		case Qt::Key::Key_R:
+			camera.moveUp();
+			break;
+		case Qt::Key::Key_F:
+			camera.moveDown();
+			break;
+	}
+	repaint();
 }
 
 void MetapodGLWindow::paintGL() {
@@ -169,7 +203,7 @@ void MetapodGLWindow::paintGL() {
 	mat4 translationMatrix = glm::translate(vec3(-1.0f, +0.0f, -3.0f));
 	mat4 rotationMatrix = glm::rotate(0.6283185f, vec3(1.0f, 0.0f, 0.0f));
 
-	fullTransformMatrix = perspectiveMatrix*translationMatrix*rotationMatrix;
+	fullTransformMatrix = perspectiveMatrix*camera.getWorldToViewMatrix()*translationMatrix*rotationMatrix;
 
 	glUniformMatrix4fv(fullTransformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix[0][0]);
 
@@ -179,7 +213,7 @@ void MetapodGLWindow::paintGL() {
 	translationMatrix = glm::translate(vec3(+1.0f, +0.0f, -3.75f));
 	rotationMatrix = glm::rotate(2.20f, vec3(0.0f, 1.0f, 0.0f));
 
-	fullTransformMatrix = perspectiveMatrix*translationMatrix*rotationMatrix;
+	fullTransformMatrix = perspectiveMatrix*camera.getWorldToViewMatrix()*translationMatrix*rotationMatrix;
 
 	glUniformMatrix4fv(fullTransformMatrixUniformLocation, 1, GL_FALSE, &fullTransformMatrix[0][0]);
 
